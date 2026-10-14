@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply m-0 bg-black font-sans text-white antialiased; }
+  button, a { @apply transition-colors; }
+  select, option { color-scheme: dark; }
+}
+
+@layer components {
+  .panel { @apply rounded-2xl border border-white/10 bg-slate-950/80; }
+  .primary-button { @apply rounded-xl bg-blue-500 px-5 py-3 font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600; }
+  .secondary-button { @apply rounded-xl border border-white/15 px-5 py-3 font-bold text-white hover:bg-white/10; }
+  .field { @apply w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20; }
+}
