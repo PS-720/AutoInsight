@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { cars } from "../data";
 
 export default function Admin() {
 	const [tab, setTab] = useState("Dashboard");
+	const cars = [];
 	return (
 		<main className="min-h-screen bg-slate-950">
 			<div className="mx-auto flex max-w-7xl flex-col md:flex-row">
@@ -31,19 +31,9 @@ export default function Admin() {
 						Frontend admin surface ready for the future Express.js API.
 					</p>
 					{tab === "Dashboard" && (
-						<div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-							{[
-								["120+", "Cars"],
-								["8K+", "Users"],
-								["1.2K+", "Reviews"],
-								["128", "Posts"],
-							].map(([value, label]) => (
-								<div className="panel p-5" key={label}>
-									<strong className="text-3xl text-blue-400">{value}</strong>
-									<p className="mt-2 text-slate-400">{label}</p>
-								</div>
-							))}
-						</div>
+						<p className="panel mt-8 p-6 text-slate-400">
+							Dashboard statistics will appear when the backend API is connected.
+						</p>
 					)}
 					{tab === "Manage Cars" && (
 						<div className="mt-8 space-y-3">

@@ -1,22 +1,26 @@
 # AutoInsight
 
-React/Vite frontend for the AutoInsight car review and community platform.
+AutoInsight is a car review and community platform organized as a frontend/backend monorepo.
 
-## Development
+## Project structure
 
-```bash
+```text
+frontend/   React and Vite user interface
+backend/    Express.js API structure
+```
+
+The frontend is currently prepared to consume backend API data. Local demo collections have been removed; car, review, discussion, post, authentication, and admin data should come from the backend when its API is implemented.
+
+## Frontend
+
+```powershell
+cd frontend
 npm install
 npm run dev
 ```
 
-The application is frontend-only. PHP, MySQL, database migrations, and XAMPP-specific code have been removed. Authentication, reviews, posts, and admin actions currently use local demo state and are ready to be wired to the future Express.js API.
+See [`frontend/README.md`](frontend/README.md) for frontend-specific details.
 
-## Frontend structure
+## Backend
 
-- `src/App.jsx` - application routes
-- `src/components/` - shared layout, navigation, footer, and car card components
-- `src/pages/` - page-level route components
-- `src/data.js` - temporary frontend demo data
-- `src/index.css` - Tailwind entry point and shared component utilities
-
-Tailwind is configured in `tailwind.config.js` and `postcss.config.js`. The legacy CSS directory has been removed.
+The backend structure is scaffolded under [`backend/`](backend/). Its implementation can be added independently of the React application.
