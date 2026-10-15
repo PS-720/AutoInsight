@@ -24,3 +24,17 @@ See [`frontend/README.md`](frontend/README.md) for frontend-specific details.
 ## Backend
 
 The backend structure is scaffolded under [`backend/`](backend/). Its implementation can be added independently of the React application.
+
+### MongoDB
+
+The backend uses MongoDB when `backend/.env` contains `MONGODB_URI`:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/
+MONGODB_DATABASE=autoinsight
+```
+
+The first startup creates the `autoinsight` database state and seeds the
+administrator and car catalogue. MongoDB data is stored in the
+`application_state` collection. `MONGODB_URI` is required; the backend does not
+write application data to JSON.
