@@ -1,5 +1,23 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { MongoClient } from "mongodb";
 import { env } from "../config/env.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const jsonFilePath = path.resolve(__dirname, "../../data/autoinsight.json");
+
+function syncJsonFile(dataToPersist) {
+  try {
+    const dir = path.dirname(jsonFilePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(jsonFilePath, JSON.stringify(dataToPersist, null, 2), "utf8");
+  } catch (err) {
+    console.error("Failed to sync autoinsight.json:", err.message);
+  }
+}
 
 const seedCars = [
   [
@@ -140,10 +158,12 @@ export async function getStore() {
     );
   }
   data = await getMongoState();
+  syncJsonFile(data);
   return data;
 }
 
 export function saveStore() {
+  syncJsonFile(data);
   writeQueue = writeQueue.then(async () => {
     if (!mongoState) await getMongoState();
     await mongoState.replaceOne(
