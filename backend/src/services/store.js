@@ -139,7 +139,6 @@ export async function getStore() {
       "MONGODB_URI is required. Configure backend/.env before starting AutoInsight.",
     );
   }
-  if (data) return data;
   data = await getMongoState();
   return data;
 }

@@ -38,23 +38,78 @@ export async function createReview(request, response) {
   );
   if (!store.cars.some((car) => car.id === carId))
     throw new HttpError(404, "Car not found.");
+  const rating = integer(request.body.rating, "rating", 0, 5);
+  const title = requiredString(request.body.title || "Rating & Review", "title", 200);
+  const body = typeof request.body.body === "string" ? request.body.body.trim().slice(0, 10000) : "";
   const review = {
     id: nextId("reviews"),
     userId: request.user.id,
     carId,
-    rating: integer(request.body.rating, "rating", 1, 5),
-    title: requiredString(request.body.title, "title", 200),
-    body: requiredString(request.body.body, "body", 10000),
+    rating,
+    title,
+    body: body || `Rated ${rating}/5 stars.`,
     createdAt: new Date().toISOString(),
   };
-  if (review.body.length < 100)
-    throw new HttpError(400, "body must be at least 100 characters.");
   store.reviews.push(review);
   await saveStore();
   response.status(201).json({
     success: true,
     review: { ...review, author: author(store, request.user.id) },
   });
+}
+
+export async function updateReview(request, response) {
+  const store = await getStore();
+  const reviewId = integer(
+    request.params.id,
+    "reviewId",
+    1,
+    Number.MAX_SAFE_INTEGER,
+  );
+  const review = store.reviews.find((item) => item.id === reviewId);
+  if (!review) throw new HttpError(404, "Review not found.");
+
+  if (review.userId !== request.user.id && request.user.role !== "admin") {
+    throw new HttpError(403, "You can only edit your own reviews.");
+  }
+
+  if (request.body.rating !== undefined) {
+    review.rating = integer(request.body.rating, "rating", 0, 5);
+  }
+  if (request.body.title !== undefined) {
+    review.title = requiredString(request.body.title, "title", 200);
+  }
+  if (request.body.body !== undefined) {
+    review.body = typeof request.body.body === "string" ? request.body.body.trim().slice(0, 10000) : "";
+  }
+  review.updatedAt = new Date().toISOString();
+
+  await saveStore();
+  response.json({
+    success: true,
+    review: { ...review, author: author(store, review.userId) },
+  });
+}
+
+export async function deleteReview(request, response) {
+  const store = await getStore();
+  const reviewId = integer(
+    request.params.id,
+    "reviewId",
+    1,
+    Number.MAX_SAFE_INTEGER,
+  );
+  const index = store.reviews.findIndex((item) => item.id === reviewId);
+  if (index < 0) throw new HttpError(404, "Review not found.");
+
+  const review = store.reviews[index];
+  if (review.userId !== request.user.id && request.user.role !== "admin") {
+    throw new HttpError(403, "You can only delete your own reviews.");
+  }
+
+  store.reviews.splice(index, 1);
+  await saveStore();
+  response.status(204).end();
 }
 
 export async function listPosts(request, response) {
