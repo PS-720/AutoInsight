@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 
@@ -10,17 +10,35 @@ const links = [
   ["/review", "review.svg", "Write Review"],
 ];
 const icon = (name) => `/Asset/Icons/${name}`;
-const avatar = "/Asset/Images/person1.jpg";
+const defaultAvatar = "/Asset/Icons/default-avatar.svg";
 
 export default function Header() {
   const [user, setUser] = useState(() =>
     JSON.parse(sessionStorage.getItem("ai_user") || "null"),
   );
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   const logout = () => {
     api.clearSession();
     setUser(null);
+    setOpen(false);
     navigate("/");
   };
 
@@ -55,26 +73,36 @@ export default function Header() {
         </ul>
         <div className="relative flex items-center gap-2">
           {user ? (
-            <>
+            <div className="relative" ref={dropdownRef}>
               <button
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 pr-3 font-semibold"
+                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 pr-3 font-semibold transition-colors hover:border-white/20 hover:bg-white/10"
                 onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                type="button"
               >
                 <img
                   className="h-8 w-8 rounded-full object-cover"
-                  src={avatar}
+                  src={user.avatar || defaultAvatar}
                   alt=""
+                  onError={(e) => {
+                    e.target.src = defaultAvatar;
+                  }}
                 />
                 {user.name}
-                <span className="text-xs text-slate-400">▼</span>
+                <span className={`text-xs text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+                  ▼
+                </span>
               </button>
               {open && (
                 <div className="absolute right-0 top-14 w-64 rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl">
                   <div className="mb-3 flex gap-3">
                     <img
-                      className="h-10 w-10 rounded-full"
-                      src={avatar}
+                      className="h-10 w-10 rounded-full object-cover"
+                      src={user.avatar || defaultAvatar}
                       alt=""
+                      onError={(e) => {
+                        e.target.src = defaultAvatar;
+                      }}
                     />
                     <div>
                       <strong>{user.name}</strong>
@@ -82,20 +110,30 @@ export default function Header() {
                     </div>
                   </div>
                   <Link
-                    className="block rounded-lg px-3 py-2 text-sm hover:bg-white/10"
+                    className="block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-white/10"
                     to="/profile"
+                    onClick={() => setOpen(false)}
                   >
                     View Profile
                   </Link>
+                  {user.role === "admin" && (
+                    <Link
+                      className="block rounded-lg px-3 py-2 text-sm font-semibold text-blue-400 transition-colors hover:bg-blue-500/10"
+                      to="/admin"
+                      onClick={() => setOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
                   <button
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-red-500/10"
                     onClick={logout}
                   >
                     Logout
                   </button>
                 </div>
               )}
-            </>
+            </div>
           ) : (
             <>
               <Link className="secondary-button px-3 py-2 text-sm" to="/login">

@@ -99,11 +99,67 @@ export default function Auth({ signup = false }) {
     </main>
   );
 }
-function Field({ label, ...props }) {
+function EyeIcon({ visible }) {
+  if (visible) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5 text-slate-400 hover:text-white"
+      >
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5 text-slate-400 hover:text-white"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function Field({ label, type = "text", ...props }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
+
   return (
     <label className="block text-sm font-bold text-slate-300">
       {label}
-      <input className="field mt-2" required {...props} />
+      <div className="relative mt-2">
+        <input
+          className={`field ${isPassword ? "pr-11" : ""}`}
+          type={inputType}
+          required
+          {...props}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3.5 focus:outline-none"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            <EyeIcon visible={showPassword} />
+          </button>
+        )}
+      </div>
     </label>
   );
 }

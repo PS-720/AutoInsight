@@ -51,3 +51,31 @@ export async function login(request, response) {
 export async function me(request, response) {
   response.json({ success: true, user: publicUser(request.user) });
 }
+
+export async function updateProfile(request, response) {
+  const store = await getStore();
+  const user = store.users.find((u) => u.id === request.user.id);
+  if (!user) throw new HttpError(404, "User not found.");
+
+  if (request.body.name !== undefined) {
+    user.name = requiredString(request.body.name, "name", 100);
+  }
+
+  if (request.body.password !== undefined && request.body.password !== "") {
+    const password = requiredString(request.body.password, "password", 128);
+    if (password.length < 8)
+      throw new HttpError(400, "password must be at least 8 characters.");
+    user.passwordHash = await bcrypt.hash(password, 12);
+  }
+
+  if (request.body.avatar !== undefined) {
+    user.avatar = typeof request.body.avatar === "string" ? request.body.avatar : "";
+  }
+
+  await saveStore();
+  response.json({
+    success: true,
+    user: publicUser(user),
+    token: signUser(user),
+  });
+}
