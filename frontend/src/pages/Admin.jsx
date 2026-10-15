@@ -6,9 +6,11 @@ export default function Admin() {
   const [tab, setTab] = useState("Dashboard");
   const [stats, setStats] = useState(null);
   const [cars, setCars] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingCar, setEditingCar] = useState(null);
   const [newCar, setNewCar] = useState({
     brand: "",
     model: "",
@@ -22,10 +24,15 @@ export default function Admin() {
   });
 
   const loadData = () => {
-    Promise.all([api.get("/admin/stats"), api.get("/cars?limit=100")])
-      .then(([statsData, carData]) => {
+    Promise.all([
+      api.get("/admin/stats"),
+      api.get("/cars?limit=100"),
+      api.get("/reviews?limit=100"),
+    ])
+      .then(([statsData, carData, reviewData]) => {
         setStats(statsData.stats);
         setCars(carData.items);
+        setReviews(reviewData.items || []);
       })
       .catch((loadError) => setError(loadError.message));
   };
@@ -33,6 +40,18 @@ export default function Admin() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleDeleteReview = async (reviewId, title) => {
+    if (!window.confirm(`Are you sure you want to delete review "${title || reviewId}"?`)) return;
+    try {
+      setError("");
+      await api.delete(`/reviews/${reviewId}`);
+      setSuccess("Review deleted successfully.");
+      loadData();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleDeleteCar = async (carId, carName) => {
     if (!window.confirm(`Are you sure you want to delete ${carName}?`)) return;
@@ -75,6 +94,45 @@ export default function Admin() {
     }
   };
 
+  const handleStartEditCar = (car) => {
+    setEditingCar({
+      id: car.id,
+      brand: car.brand,
+      model: car.model,
+      year: car.year,
+      price: car.price,
+      fuel: car.fuel,
+      seats: car.seats,
+      bodyType: car.bodyType,
+      image: car.image,
+      featured: Boolean(car.featured),
+    });
+  };
+
+  const handleUpdateCar = async (e) => {
+    e.preventDefault();
+    if (!editingCar) return;
+    try {
+      setError("");
+      await api.put(`/cars/${editingCar.id}`, {
+        brand: editingCar.brand,
+        model: editingCar.model,
+        year: Number(editingCar.year),
+        price: Number(editingCar.price),
+        fuel: editingCar.fuel,
+        seats: Number(editingCar.seats),
+        bodyType: editingCar.bodyType,
+        image: editingCar.image,
+        featured: Boolean(editingCar.featured),
+      });
+      setSuccess(`Updated ${editingCar.brand} ${editingCar.model} successfully!`);
+      setEditingCar(null);
+      loadData();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex max-w-7xl flex-col md:flex-row">
@@ -84,7 +142,7 @@ export default function Admin() {
           </Link>
           <p className="text-sm text-slate-400">Admin Panel</p>
           <nav className="mt-8 space-y-2">
-            {["Dashboard", "Manage Cars"].map((item) => (
+            {["Dashboard", "Manage Cars", "Manage Reviews"].map((item) => (
               <button
                 className={`block w-full rounded-lg px-3 py-2 text-left font-semibold ${
                   tab === item ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-white/10"
@@ -160,11 +218,17 @@ export default function Admin() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <span className="font-semibold text-blue-400">₹{car.price}L</span>
                     <button
+                      onClick={() => handleStartEditCar(car)}
+                      className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-400 hover:bg-blue-500 hover:text-white transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
                       onClick={() => handleDeleteCar(car.id, `${car.brand} ${car.model}`)}
-                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white"
+                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition-colors"
                     >
                       Delete
                     </button>
@@ -176,12 +240,53 @@ export default function Admin() {
               )}
             </div>
           )}
+
+          {tab === "Manage Reviews" && (
+            <div className="mt-8 space-y-4">
+              {reviews.map((rev) => {
+                const reviewedCar = cars.find((c) => c.id === rev.carId);
+                return (
+                  <div
+                    className="panel flex flex-wrap items-start justify-between gap-4 p-5"
+                    key={rev.id}
+                  >
+                    <div className="flex-1 min-w-[240px]">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-1 text-sm font-bold text-yellow-400">
+                          ★ {rev.rating} / 5
+                        </span>
+                        <h4 className="font-bold text-lg text-white">{rev.title}</h4>
+                        {reviewedCar && (
+                          <span className="rounded-md bg-blue-500/20 px-2 py-0.5 text-xs text-blue-300">
+                            {reviewedCar.brand} {reviewedCar.model}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-2 text-slate-300 text-sm leading-relaxed">{rev.body}</p>
+                      <p className="mt-3 text-xs text-slate-400">
+                        Author: <strong className="text-slate-200">{rev.author?.name || "User"}</strong> (ID: {rev.userId}) · {new Date(rev.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteReview(rev.id, rev.title)}
+                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition-colors shrink-0"
+                    >
+                      Delete Review
+                    </button>
+                  </div>
+                );
+              })}
+              {!reviews.length && (
+                <p className="panel p-6 text-center text-slate-400">No reviews found.</p>
+              )}
+            </div>
+          )}
         </section>
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="panel w-full max-w-xl p-6 sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="panel w-full max-w-xl p-6 sm:p-8 !bg-slate-900/95 backdrop-blur-md border border-white/15 shadow-2xl">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-bold">Add New Car</h3>
               <button
@@ -293,6 +398,140 @@ export default function Admin() {
                 </button>
                 <button type="submit" className="primary-button py-2 text-sm">
                   Save Car
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingCar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="panel w-full max-w-xl p-6 sm:p-8 !bg-slate-900/95 backdrop-blur-md border border-white/15 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold">Edit Car Details</h3>
+              <button
+                onClick={() => setEditingCar(null)}
+                className="text-2xl leading-none text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleUpdateCar} className="mt-6 space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Brand</label>
+                  <input
+                    required
+                    className="field mt-1"
+                    placeholder="e.g. BMW"
+                    value={editingCar.brand}
+                    onChange={(e) => setEditingCar({ ...editingCar, brand: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Model</label>
+                  <input
+                    required
+                    className="field mt-1"
+                    placeholder="e.g. M3"
+                    value={editingCar.model}
+                    onChange={(e) => setEditingCar({ ...editingCar, model: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Year</label>
+                  <input
+                    type="number"
+                    required
+                    className="field mt-1"
+                    value={editingCar.year}
+                    onChange={(e) => setEditingCar({ ...editingCar, year: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Price (Lakh ₹)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    className="field mt-1"
+                    placeholder="e.g. 65.5"
+                    value={editingCar.price}
+                    onChange={(e) => setEditingCar({ ...editingCar, price: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Fuel</label>
+                  <select
+                    className="field mt-1 [color-scheme:dark]"
+                    value={editingCar.fuel}
+                    onChange={(e) => setEditingCar({ ...editingCar, fuel: e.target.value })}
+                  >
+                    <option value="Petrol">Petrol</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Body Type</label>
+                  <select
+                    className="field mt-1 [color-scheme:dark]"
+                    value={editingCar.bodyType}
+                    onChange={(e) => setEditingCar({ ...editingCar, bodyType: e.target.value })}
+                  >
+                    <option value="SUV">SUV</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="Hatchback">Hatchback</option>
+                    <option value="Coupe">Coupe</option>
+                    <option value="Luxury Sedan">Luxury Sedan</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400">Seats</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    required
+                    className="field mt-1"
+                    value={editingCar.seats}
+                    onChange={(e) => setEditingCar({ ...editingCar, seats: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400">Image Path / Asset</label>
+                <input
+                  className="field mt-1"
+                  placeholder="Asset/Images/cars/... or Asset/Images/bmw.jpg"
+                  value={editingCar.image}
+                  onChange={(e) => setEditingCar({ ...editingCar, image: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-featured"
+                  checked={editingCar.featured}
+                  onChange={(e) => setEditingCar({ ...editingCar, featured: e.target.checked })}
+                  className="h-4 w-4 rounded"
+                />
+                <label htmlFor="edit-featured" className="text-sm text-slate-300">
+                  Featured on homepage
+                </label>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingCar(null)}
+                  className="secondary-button py-2 text-sm"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button py-2 text-sm">
+                  Update Car
                 </button>
               </div>
             </form>
