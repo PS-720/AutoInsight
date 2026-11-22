@@ -77,6 +77,189 @@ export async function compareCars(request, response) {
   });
 }
 
+export async function recommendCars(request, response) {
+  const store = await getStore();
+  const body = request.body || {};
+  const text = [
+    body.requirements,
+    body.preferences,
+    body.useCase,
+    body.description,
+    body.query,
+  ]
+    .filter((value) => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  const explicitFuel = optionalString(body.fuel, "fuel", 30);
+  const explicitBody = optionalString(body.bodyType, "bodyType", 30);
+  const explicitBrand = optionalString(body.brand, "brand", 80);
+  const explicitSeats =
+    body.seats === undefined ? undefined : integer(body.seats, "seats", 1, 20);
+
+  let maxBudget = body.maxBudget ?? body.budget ?? body.maxPrice;
+  if (maxBudget !== undefined && maxBudget !== null && maxBudget !== "") {
+    maxBudget = Number(maxBudget);
+    if (!Number.isFinite(maxBudget) || maxBudget < 0)
+      throw new HttpError(400, "Budget must be a non-negative number.");
+  } else {
+    maxBudget = undefined;
+  }
+
+  const fuel =
+    explicitFuel ||
+    (/electric|\bev\b|ev\b/.test(text)
+      ? "Electric"
+      : /hybrid/.test(text)
+        ? "Hybrid"
+        : /diesel/.test(text)
+          ? "Diesel"
+          : /petrol|gasoline/.test(text)
+            ? "Petrol"
+            : undefined);
+
+  let bodyType =
+    explicitBody ||
+    (/suv|crossover|off.?road/.test(text)
+      ? "SUV"
+      : /sedan/.test(text)
+        ? "Sedan"
+        : /hatchback/.test(text)
+          ? "Hatchback"
+          : /mpv|muv/.test(text)
+            ? "MPV"
+            : undefined);
+
+  const brand =
+    explicitBrand ||
+    [...new Set(store.cars.map((car) => car.brand))]
+      .find((candidate) => text.includes(candidate.toLowerCase()));
+
+  let seats = explicitSeats;
+  if (seats === undefined) {
+    const seatMatch = text.match(/\b([1-9]|1\d|20)\s*(?:seat|seater)s?\b/);
+    if (seatMatch) seats = Number(seatMatch[1]);
+  }
+
+  if (maxBudget === undefined) {
+    const lakhMatch = text.match(
+      /\b(?:under|below|budget(?: of)?|around|max(?:imum)?(?: of)?|upto|up to)?\s*(\d+(?:\.\d+)?)\s*(?:lakh|lac|l)\b/,
+    );
+    const croreMatch = text.match(
+      /\b(?:under|below|budget(?: of)?|around|max(?:imum)?(?: of)?|upto|up to)?\s*(\d+(?:\.\d+)?)\s*(crore|cr)\b/,
+    );
+    if (croreMatch) maxBudget = Number(croreMatch[1]) * 100;
+    else if (lakhMatch) maxBudget = Number(lakhMatch[1]);
+  }
+
+  const limitValue =
+    body.limit === undefined ? 6 : integer(body.limit, "limit", 1, 20);
+  const priority = typeof body.priority === "string"
+    ? body.priority.toLowerCase()
+    : "";
+
+  const candidates = store.cars
+    .filter(
+      (car) =>
+        maxBudget === undefined || car.price <= maxBudget,
+    )
+    .filter(
+      (car) =>
+        !fuel || car.fuel.toLowerCase() === fuel.trim().toLowerCase(),
+    )
+    .filter(
+      (car) =>
+        !bodyType ||
+        car.bodyType.toLowerCase() === bodyType.trim().toLowerCase(),
+    )
+    .filter(
+      (car) =>
+        !seats || car.seats >= seats,
+    )
+    .filter(
+      (car) =>
+        !brand || car.brand.toLowerCase() === brand.trim().toLowerCase(),
+    )
+    .map((car) => {
+      const publicCarData = publicCar(car, store);
+      let score = 30;
+      const reasons = [];
+
+      if (maxBudget !== undefined) {
+        const budgetFit = 1 - Math.max(0, car.price / maxBudget - 0.5);
+        score += Math.max(0, budgetFit) * 20;
+        reasons.push(`Within your ₹${maxBudget} lakh budget`);
+      }
+      if (fuel && car.fuel.toLowerCase() === fuel.trim().toLowerCase()) {
+        score += 18;
+        reasons.push(`${car.fuel} powertrain matches your preference`);
+      }
+      if (bodyType && car.bodyType.toLowerCase() === bodyType.trim().toLowerCase()) {
+        score += 16;
+        reasons.push(`${car.bodyType} matches your preferred body type`);
+      }
+      if (seats && car.seats >= seats) {
+        score += 12;
+        reasons.push(`${car.seats} seats suit your capacity needs`);
+      }
+      if (brand && car.brand.toLowerCase() === brand.trim().toLowerCase()) {
+        score += 15;
+        reasons.push(`From your preferred ${car.brand} brand`);
+      }
+      if (priority === "rating" || priority === "reviews") {
+        score += publicCarData.rating * 5;
+      } else if (priority === "budget" || priority === "value") {
+        score += Math.max(0, 25 - car.price) * 0.3;
+      } else {
+        score += publicCarData.rating * 3;
+        score += car.featured ? 5 : 0;
+      }
+      if (priority === "space" && car.seats >= 7) score += 10;
+
+      if (text.includes("family") && car.seats >= 5) {
+        score += 8;
+        reasons.push("Practical choice for family use");
+      }
+      if (text.includes("city") || text.includes("commute")) {
+        if (car.bodyType === "Hatchback" || car.bodyType === "Sedan")
+          score += 8;
+        reasons.push("Suitable for everyday driving");
+      }
+      if (text.includes("off road") || text.includes("offroad") || text.includes("adventure")) {
+        if (car.bodyType === "SUV") {
+          score += 10;
+          reasons.push("SUV format suits adventure use");
+        }
+      }
+
+      return {
+        ...publicCarData,
+        recommendationScore: Math.round(Math.min(100, score)),
+        reasons: reasons.slice(0, 3),
+      };
+    })
+    .sort((a, b) =>
+      b.recommendationScore - a.recommendationScore ||
+      b.rating - a.rating ||
+      a.price - b.price,
+    )
+    .slice(0, limitValue);
+
+  response.json({
+    success: true,
+    preferences: {
+      budget: maxBudget,
+      fuel,
+      bodyType,
+      seats,
+      brand,
+      priority,
+    },
+    count: candidates.length,
+    items: candidates,
+  });
+}
+
 export async function createCar(request, response) {
   const store = await getStore();
   const car = {

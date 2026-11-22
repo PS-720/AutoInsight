@@ -93,6 +93,34 @@ test(
 );
 
 test(
+  "recommendation endpoint applies budget and preference filters",
+  requiresMongo,
+  async () => {
+    const result = await request("/cars/recommend", {
+      method: "POST",
+      body: {
+        budget: 20,
+        fuel: "Petrol",
+        bodyType: "SUV",
+        seats: 5,
+        limit: 3,
+      },
+    });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.body.success, true);
+    assert.equal(result.body.items.length > 0, true);
+    assert.equal(result.body.items.length <= 3, true);
+    for (const car of result.body.items) {
+      assert.equal(car.price <= 20, true);
+      assert.equal(car.fuel, "Petrol");
+      assert.equal(car.bodyType, "SUV");
+      assert.equal(car.seats >= 5, true);
+      assert.equal(typeof car.recommendationScore, "number");
+    }
+  },
+);
+
+test(
   "user management endpoints require administrator authentication",
   requiresMongo,
   async () => {

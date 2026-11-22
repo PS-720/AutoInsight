@@ -5,10 +5,11 @@ import { api } from "../lib/api";
 const links = [
   ["/", "home.svg", "Home"],
   ["/cars", "car-ico.svg", "Cars"],
+  ["/recommend", "twinkleStars.svg", "Recommend"],
   ["/compare", "growth.svg", "Compare"],
-  ["/tips", "tips.svg", "Tips & Problems"],
+  ["/tips", "tips.svg", "Tips"],
   ["/community", "chat.svg", "Community"],
-  ["/review", "review.svg", "Write Review"],
+  ["/review", "review.svg", "Review"],
 ];
 const icon = (name) => `/Asset/Icons/${name}`;
 const defaultAvatar = "/Asset/Icons/default-avatar.svg";
@@ -45,7 +46,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur">
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-4 lg:px-8">
+      <nav className="mx-auto flex h-20 max-w-[1500px] items-center justify-between gap-3 px-4 lg:px-6">
         <Link className="flex shrink-0 items-center gap-3" to="/">
           <span className="rounded-xl bg-blue-500 p-2">
             <img className="h-6 w-6" src={icon("car-ico.svg")} alt="" />
@@ -57,12 +58,12 @@ export default function Header() {
             </small>
           </span>
         </Link>
-        <ul className="hidden items-center gap-1 lg:flex">
+        <ul className="hidden shrink items-center gap-0.5 xl:flex">
           {links.map(([to, image, label]) => (
             <li key={to}>
               <NavLink
                 className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ${isActive ? "bg-blue-500/15 text-blue-400" : "text-slate-300 hover:bg-white/10 hover:text-white"}`
+                  `flex whitespace-nowrap items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-semibold ${isActive ? "bg-blue-500/15 text-blue-400" : "text-slate-300 hover:bg-white/10 hover:text-white"}`
                 }
                 to={to}
               >

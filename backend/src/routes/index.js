@@ -15,6 +15,7 @@ import {
   deleteCar,
   getCar,
   listCars,
+  recommendCars,
   updateCar,
 } from "../controllers/cars.js";
 import {
@@ -52,6 +53,7 @@ router.get("/users", authenticate, requireAdmin, ...post(listUsers));
 router.delete("/users/:id", authenticate, requireAdmin, ...post(deleteUser));
 router.get("/cars", ...post(listCars));
 router.get("/cars/compare", ...post(compareCars));
+router.post("/cars/recommend", ...post(recommendCars));
 router.get("/cars/:id", ...post(getCar));
 router.post("/cars", authenticate, requireAdmin, ...post(createCar));
 router.put("/cars/:id", authenticate, requireAdmin, ...post(updateCar));

@@ -8,6 +8,7 @@ import Compare from "./pages/Compare";
 import Community from "./pages/Community";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import Recommend from "./pages/Recommend";
 import Review from "./pages/Review";
 import Tips from "./pages/Tips";
 
@@ -51,6 +52,14 @@ export default function App() {
         element={
           <Layout>
             <Compare />
+          </Layout>
+        }
+      />
+      <Route
+        path="/recommend"
+        element={
+          <Layout>
+            <Recommend />
           </Layout>
         }
       />
