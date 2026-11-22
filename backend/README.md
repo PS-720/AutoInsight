@@ -45,3 +45,7 @@ Endpoints include:
 - `GET` and authenticated `POST /discussions/:id/replies`
 - authenticated `GET /profile`
 - admin `GET /admin/stats`
+
+The frontend uses these endpoints to provide the complete create, read, update,
+delete, comment, reply, and voting flows. Public listing endpoints support
+pagination with `page` and `limit` query parameters (up to 100 items per page).

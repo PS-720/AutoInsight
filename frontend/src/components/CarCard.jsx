@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
 
-export default function CarCard({ car }) {
+export default function CarCard({
+  car,
+  comparisonSelected = false,
+  onToggleComparison,
+}) {
   return (
-    <Link className="group block focus:outline-none" to={`/cars/${car.id}`}>
-      <article className="panel relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:border-blue-500/60 group-hover:shadow-2xl group-hover:shadow-blue-500/20">
+    <article className="panel group relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-blue-500/60 hover:shadow-2xl hover:shadow-blue-500/20">
+      <Link className="block focus:outline-none" to={`/cars/${car.id}`}>
         <div className="h-52 overflow-hidden bg-slate-900">
           <img
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
@@ -35,12 +39,26 @@ export default function CarCard({ car }) {
             View Details
           </button>
         </div>
-        {car.featured && (
-          <span className="absolute right-3 top-3 rounded-full bg-red-600 px-3 py-1 text-xs font-bold shadow-md shadow-red-600/30 transition-transform duration-300 group-hover:scale-105">
-            Featured
-          </span>
-        )}
-      </article>
-    </Link>
+      </Link>
+      {onToggleComparison && (
+        <button
+          type="button"
+          className={`absolute left-3 top-3 rounded-lg border px-3 py-2 text-xs font-bold ${
+            comparisonSelected
+              ? "border-blue-400 bg-blue-500 text-white"
+              : "border-white/20 bg-slate-950/95 text-slate-200 hover:border-blue-400"
+          }`}
+          onClick={() => onToggleComparison(car)}
+          aria-pressed={comparisonSelected}
+        >
+          {comparisonSelected ? "Selected" : "Compare"}
+        </button>
+      )}
+      {car.featured && (
+        <span className="absolute right-3 top-3 rounded-full bg-red-600 px-3 py-1 text-xs font-bold shadow-md shadow-red-600/30 transition-transform duration-300 group-hover:scale-105">
+          Featured
+        </span>
+      )}
+    </article>
   );
 }

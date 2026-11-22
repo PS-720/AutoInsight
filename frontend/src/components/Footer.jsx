@@ -14,6 +14,7 @@ export default function Footer() {
           title="Quick Links"
           links={[
             ["/cars", "Browse Cars"],
+            ["/compare", "Compare Cars"],
             ["/review", "Write Review"],
             ["/community", "Community Forum"],
           ]}

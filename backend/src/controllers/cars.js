@@ -52,6 +52,31 @@ export async function getCar(request, response) {
   });
 }
 
+export async function compareCars(request, response) {
+  const rawIds =
+    request.query.ids ||
+    request.query.carIds ||
+    request.params.ids ||
+    "";
+  const ids = String(rawIds)
+    .split(",")
+    .map((id) => Number(id.trim()))
+    .filter((id) => Number.isInteger(id));
+
+  if (ids.length !== 2 || ids[0] === ids[1])
+    throw new HttpError(400, "Exactly two different car ids are required.");
+
+  const store = await getStore();
+  const cars = ids.map((id) => store.cars.find((car) => car.id === id));
+  if (cars.some((car) => !car))
+    throw new HttpError(404, "One or both cars were not found.");
+
+  response.json({
+    success: true,
+    cars: cars.map((car) => publicCar(car, store)),
+  });
+}
+
 export async function createCar(request, response) {
   const store = await getStore();
   const car = {

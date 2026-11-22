@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 const links = [
   ["/", "home.svg", "Home"],
   ["/cars", "car-ico.svg", "Cars"],
+  ["/compare", "growth.svg", "Compare"],
   ["/tips", "tips.svg", "Tips & Problems"],
   ["/community", "chat.svg", "Community"],
   ["/review", "review.svg", "Write Review"],

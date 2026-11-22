@@ -159,6 +159,12 @@ export default function CarDetails() {
                 <span className="ml-4 text-3xl font-extrabold text-blue-400">
                   ₹{data.car.price}L
                 </span>
+                <Link
+                  className="secondary-button px-4 py-2 text-sm"
+                  to={`/compare?cars=${data.car.id}`}
+                >
+                  Compare Car
+                </Link>
               </div>
             </div>
 

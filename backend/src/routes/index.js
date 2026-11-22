@@ -1,8 +1,16 @@
 import { Router } from "express";
 import { authenticate, requireAdmin } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/http.js";
-import { login, me, register, updateProfile } from "../controllers/auth.js";
 import {
+  deleteUser,
+  listUsers,
+  login,
+  me,
+  register,
+  updateProfile,
+} from "../controllers/auth.js";
+import {
+  compareCars,
   createCar,
   deleteCar,
   getCar,
@@ -40,7 +48,10 @@ router.post("/auth/register", ...post(register));
 router.post("/auth/login", ...post(login));
 router.get("/auth/me", authenticate, ...post(me));
 router.put("/auth/profile", authenticate, ...post(updateProfile));
+router.get("/users", authenticate, requireAdmin, ...post(listUsers));
+router.delete("/users/:id", authenticate, requireAdmin, ...post(deleteUser));
 router.get("/cars", ...post(listCars));
+router.get("/cars/compare", ...post(compareCars));
 router.get("/cars/:id", ...post(getCar));
 router.post("/cars", authenticate, requireAdmin, ...post(createCar));
 router.put("/cars/:id", authenticate, requireAdmin, ...post(updateCar));

@@ -9,7 +9,9 @@ frontend/   React and Vite user interface
 backend/    Express.js API structure
 ```
 
-The frontend is currently prepared to consume backend API data. Local demo collections have been removed; car, review, discussion, post, authentication, and admin data should come from the backend when its API is implemented.
+The frontend consumes the backend API for the car catalogue, authentication, reviews,
+tips/problems, community discussions, comments, replies, voting, and administration.
+There are no local demo collections; start the backend before opening the frontend.
 
 ## Frontend
 
@@ -36,5 +38,4 @@ MONGODB_DATABASE=autoinsight
 
 The first startup creates the `autoinsight` database state and seeds the
 administrator and car catalogue. MongoDB data is stored in the
-`application_state` collection. `MONGODB_URI` is required; the backend does not
-write application data to JSON.
+`application_state` collection. `MONGODB_URI` is required.

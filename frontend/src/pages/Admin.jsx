@@ -7,6 +7,7 @@ export default function Admin() {
   const [stats, setStats] = useState(null);
   const [cars, setCars] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -22,17 +23,22 @@ export default function Admin() {
     image: "Asset/Images/cars/1778438147_cretafront.jpg",
     featured: false,
   });
+  const currentUser = JSON.parse(
+    sessionStorage.getItem("ai_user") || "null",
+  );
 
   const loadData = () => {
     Promise.all([
       api.get("/admin/stats"),
       api.get("/cars?limit=100"),
       api.get("/reviews?limit=100"),
+      api.get("/users"),
     ])
-      .then(([statsData, carData, reviewData]) => {
+      .then(([statsData, carData, reviewData, userData]) => {
         setStats(statsData.stats);
         setCars(carData.items);
         setReviews(reviewData.items || []);
+        setUsers(userData.users || []);
       })
       .catch((loadError) => setError(loadError.message));
   };
@@ -59,6 +65,23 @@ export default function Admin() {
       setError("");
       await api.delete(`/cars/${carId}`);
       setSuccess(`Deleted ${carName} successfully.`);
+      loadData();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (userId === currentUser?.id) {
+      setError("You cannot remove your own admin account.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to remove ${userName}? Their reviews and community posts will also be removed.`))
+      return;
+    try {
+      setError("");
+      await api.delete(`/users/${userId}`);
+      setSuccess(`Removed ${userName} successfully.`);
       loadData();
     } catch (err) {
       setError(err.message);
@@ -142,7 +165,7 @@ export default function Admin() {
           </Link>
           <p className="text-sm text-slate-400">Admin Panel</p>
           <nav className="mt-8 space-y-2">
-            {["Dashboard", "Manage Cars", "Manage Reviews"].map((item) => (
+            {["Dashboard", "Manage Cars", "Manage Reviews", "Manage Users"].map((item) => (
               <button
                 className={`block w-full rounded-lg px-3 py-2 text-left font-semibold ${
                   tab === item ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-white/10"
@@ -237,6 +260,57 @@ export default function Admin() {
               ))}
               {!cars.length && (
                 <p className="panel p-6 text-center text-slate-400">No cars found.</p>
+              )}
+            </div>
+          )}
+
+          {tab === "Manage Users" && (
+            <div className="mt-8 space-y-3">
+              {users.map((managedUser) => {
+                const isCurrentUser = managedUser.id === currentUser?.id;
+                return (
+                  <div
+                    className="panel flex flex-wrap items-center justify-between gap-4 p-4"
+                    key={managedUser.id}
+                  >
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={managedUser.avatar || "/Asset/Icons/default-avatar.svg"}
+                        alt=""
+                        className="h-12 w-12 rounded-full object-cover"
+                        onError={(event) => {
+                          event.target.src = "/Asset/Icons/default-avatar.svg";
+                        }}
+                      />
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-lg font-bold">{managedUser.name}</h4>
+                          <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${
+                            managedUser.role === "admin"
+                              ? "bg-blue-500/20 text-blue-300"
+                              : "bg-white/10 text-slate-300"
+                          }`}>
+                            {managedUser.role}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          {managedUser.email} · Joined {new Date(managedUser.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteUser(managedUser.id, managedUser.name)}
+                      disabled={isCurrentUser}
+                      title={isCurrentUser ? "You cannot remove your own account" : `Remove ${managedUser.name}`}
+                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-500/10 disabled:hover:text-red-400"
+                    >
+                      {isCurrentUser ? "Current Admin" : "Remove User"}
+                    </button>
+                  </div>
+                );
+              })}
+              {!users.length && (
+                <p className="panel p-6 text-center text-slate-400">No users found.</p>
               )}
             </div>
           )}

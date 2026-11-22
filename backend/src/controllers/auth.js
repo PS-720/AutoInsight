@@ -79,3 +79,34 @@ export async function updateProfile(request, response) {
     token: signUser(user),
   });
 }
+
+export async function listUsers(_request, response) {
+  const store = await getStore();
+  const users = [...store.users]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(publicUser);
+  response.json({ success: true, users });
+}
+
+export async function deleteUser(request, response) {
+  const store = await getStore();
+  const userId = Number(request.params.id);
+  if (!Number.isInteger(userId) || userId < 1)
+    throw new HttpError(400, "Invalid user id.");
+  if (userId === request.user.id)
+    throw new HttpError(400, "You cannot remove your own admin account.");
+
+  const index = store.users.findIndex((user) => user.id === userId);
+  if (index < 0)
+    throw new HttpError(404, "User not found.");
+
+  store.users.splice(index, 1);
+  store.reviews = (store.reviews || []).filter((item) => item.userId !== userId);
+  store.posts = (store.posts || []).filter((item) => item.userId !== userId);
+  store.comments = (store.comments || []).filter((item) => item.userId !== userId);
+  store.discussions = (store.discussions || []).filter((item) => item.userId !== userId);
+  store.replies = (store.replies || []).filter((item) => item.userId !== userId);
+
+  await saveStore();
+  response.status(204).end();
+}

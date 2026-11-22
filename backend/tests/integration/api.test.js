@@ -77,3 +77,29 @@ test(
     assert.equal(result.response.status, 401);
   },
 );
+
+test(
+  "comparison endpoint returns exactly the requested cars",
+  requiresMongo,
+  async () => {
+    const result = await request("/cars/compare?ids=1,2");
+    assert.equal(result.response.status, 200);
+    assert.equal(result.body.success, true);
+    assert.deepEqual(
+      result.body.cars.map((car) => car.id),
+      [1, 2],
+    );
+  },
+);
+
+test(
+  "user management endpoints require administrator authentication",
+  requiresMongo,
+  async () => {
+    const listResult = await request("/users");
+    assert.equal(listResult.response.status, 401);
+
+    const deleteResult = await request("/users/999", { method: "DELETE" });
+    assert.equal(deleteResult.response.status, 401);
+  },
+);

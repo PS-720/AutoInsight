@@ -4,6 +4,7 @@ import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import CarDetails from "./pages/CarDetails";
 import Cars from "./pages/Cars";
+import Compare from "./pages/Compare";
 import Community from "./pages/Community";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
@@ -34,6 +35,22 @@ export default function App() {
         element={
           <Layout>
             <CarDetails />
+          </Layout>
+        }
+      />
+      <Route
+        path="/compare"
+        element={
+          <Layout>
+            <Compare />
+          </Layout>
+        }
+      />
+      <Route
+        path="/compare/:firstId/:secondId"
+        element={
+          <Layout>
+            <Compare />
           </Layout>
         }
       />
